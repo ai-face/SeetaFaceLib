@@ -48,3 +48,4 @@ XcodePro/DetectionAlignment/DetectionAlignment/srcFD/*
 XcodePro/DetectionAlignment/*.dylib
 
 .DS_Store
+/build-CocsoFace-Qt_5_7-Debug/

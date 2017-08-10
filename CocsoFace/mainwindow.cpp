@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "helper.h"
 
@@ -11,14 +11,14 @@
 #include "face_detection.h"
 #include "face_alignment.h"
 
-#include "falconn/eigen_wrapper.h"
+//#include "falconn/eigen_wrapper.h"
 #include "falconn/lsh_nn_table.h"
 
 #include <QDesktopWidget>
 #include <QStringListModel>
 #include <QListWidget>
 #include <QMessageBox>
-
+#include <QDir>
 #include <ctime>
 
 #include <src/extractFeats.h>
@@ -64,6 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :QMainWindow(parent), ui(new Ui::MainWin
     imgs_listeWidget->setMovement(QListView::Static);
 
     this->initForm();
+    ui->frame->hide();
     // timer
     QObject::connect(&processTimer, SIGNAL(timeout()), this, SLOT(process()));
 }
@@ -112,29 +113,43 @@ void MainWindow::initForm()
     this->numKNN = 50;
     this->numReranking = 10;
 
+    QString rootname("seeta_face");
+    QString modelname("model");
+    QString cropsname("crops");
+    QDir rootdir(QDir::home().absoluteFilePath(rootname));
+    if(!rootdir.exists()) QDir::home().mkdir(rootname);
+    QDir modeldir = rootdir.absoluteFilePath(modelname);
+    if(!modeldir.exists()) rootdir.mkdir(modelname);
+    QDir cropsdir = rootdir.absoluteFilePath(cropsname);
+    if(!cropsdir.exists()) rootdir.mkdir(cropsname);
+
     // Initialize face detection model
-    face_detector = new seeta::FaceDetection("/Users/willard/codes/cpp/face/SeetaFaceLib/model/seeta_fd_frontal_v1.0.bin");
+    face_detector = new seeta::FaceDetection(
+                modeldir.absoluteFilePath("seeta_fd_frontal_v1.0.bin").toStdString().c_str());
     face_detector->SetMinFaceSize(this->MinFaceSize);
     face_detector->SetScoreThresh(2.f);
     face_detector->SetImagePyramidScaleFactor(this->ImagePyramidScaleFactor);
     face_detector->SetWindowStep(4, 4);
 
     // Initialize face alignment model
-    point_detector = new seeta::FaceAlignment("/Users/willard/codes/cpp/face/SeetaFaceLib/model/seeta_fa_v1.1.bin");
+    point_detector = new seeta::FaceAlignment(
+                modeldir.absoluteFilePath("seeta_fa_v1.1.bin").toStdString().c_str());
 
     // Initialize face Identification model
-    face_recognizer = new seeta::FaceIdentification("/Users/willard/codes/cpp/face/SeetaFaceLib/model/seeta_fr_v1.0.bin");
+    face_recognizer = new seeta::FaceIdentification(
+                modeldir.absoluteFilePath("seeta_fr_v1.0.bin").toStdString().c_str());
 
     // load image
-    cv::Mat gallery_img_color = cv::imread("/Users/willard/codes/cpp/face/SeetaFaceLib/data/test_face_recognizer/compare_im/2.jpg", 1);
+
+    cv::Mat gallery_img_color = cv::imread("/home/tom/z.git.github.beautycpp.ai/SeetaFaceLib/data/test_face_recognizer/compare_im/2.jpg", 1);
     cv::Mat gallery_img_gray;
     cv::cvtColor(gallery_img_color, gallery_img_gray, CV_BGR2GRAY);
 
     dst_img = cv::Mat((int)face_recognizer->crop_height(), (int)face_recognizer->crop_width(), CV_8UC((int)face_recognizer->crop_channels()));
 
     // Save Cropped faces and feats
-    path_imgCroppedNames = "/Users/willard/Pictures/SeetaFaces/";
-    path_namesFeats = "/Users/willard/namesFeats.bin";
+    path_imgCroppedNames = cropsdir.absolutePath().toStdString()+"/";
+    path_namesFeats = cropsdir.absoluteFilePath("namesFeats.bin").toStdString();
 
     ImageData gallery_img_data_color(gallery_img_color.cols, gallery_img_color.rows, gallery_img_color.channels());
     gallery_img_data_color.data = gallery_img_color.data;
@@ -153,6 +168,9 @@ void MainWindow::initForm()
 
     // Extract face identity feature
     face_recognizer->ExtractFeatureWithCrop(gallery_img_data_color, this->gallery_points, this->gallery_fea);
+
+    ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->listView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(provideContextMenu(QPoint)));
 }
 
 
@@ -260,7 +278,7 @@ void MainWindow::on_startButton_toggled(bool checked)
     }
 }
 
-void MainWindow::on_rMaxHorizontalSlider_valueChanged(int value)
+void MainWindow::on_rMaxHorizontalSlider_valueChanged(int )
 {
     this->MinFaceSize = ui->rMaxHorizontalSlider->value();
     //qDebug() << "rMax: " << this->Radius_Max;
@@ -268,7 +286,7 @@ void MainWindow::on_rMaxHorizontalSlider_valueChanged(int value)
 }
 
 
-void MainWindow::on_ScaleFactorQSlider_valueChanged(int value)
+void MainWindow::on_ScaleFactorQSlider_valueChanged(int )
 {
     this->ImagePyramidScaleFactor = ui->ScaleFactorQSlider->value();
     ui->culrrentScaleFactorQLabel->setText(QString::number(0.1*this->ImagePyramidScaleFactor));
@@ -294,11 +312,11 @@ void MainWindow::on_testButton_toggled(bool checked)
 
 void MainWindow::on_ImgsOpenButton_clicked()
 {
-    dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-    if ( !dir.isNull() )
+    crops_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if ( !crops_dir.isNull() )
     {
         // qDebug() << dir;
-        QDir export_folder(dir);
+        QDir export_folder(crops_dir);
         export_folder.setNameFilters(QStringList()<<"*.jpg");
         imgNamesQString = export_folder.entryList();
         // for ( QStringList::Iterator it = imgNamesQString.begin(); it != imgNamesQString.end(); ++it )
@@ -323,7 +341,7 @@ void MainWindow::searchSimilarImgs()
     idxCandidate = do_LSH_search(img_color);
 
     for (size_t i = 0 ; i != idxCandidate.size() ; i++) {
-        QString tmpImgName = dir + '/' + namesFeats.first.at(idxCandidate[i]).c_str();
+        QString tmpImgName = crops_dir + '/' + namesFeats.first.at(idxCandidate[i]).c_str();
         imgs_listeWidget->addItem(new QListWidgetItem(QIcon(tmpImgName), QString::fromStdString(namesFeats.first.at(idxCandidate[i]).c_str())));
     }
     ui->previewImg->setPixmap(QPixmap::fromImage(Helper::mat2qimage(img_color)).scaled(320, 240));
@@ -356,32 +374,34 @@ void MainWindow::provideContextMenu(const QPoint &pos)
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteImg()));
 
     // Create menu and insert some actions
-    myMenu = new QMenu();
-    myMenu->addAction(searchAction);
-    myMenu->addAction(deleteAction);
+    QMenu myMenu ;
+    myMenu.addAction(searchAction);
+    myMenu.addAction(deleteAction);
 
     // Handle global position
     QPoint globalPos = ui->listView->mapToGlobal(pos);
 
     // Show context menu at handling position
-    myMenu->exec(globalPos);
-    myMenu->close();
+    myMenu.exec(globalPos);
 }
 
 
 // listView
 void MainWindow::on_listView_clicked(const QModelIndex &index)
 {
-    imgNameSelected =  dir+'/'+imgNamesQString.at(index.row());
+    imgNameSelected =  crops_dir+'/'+imgNamesQString.at(index.row());
     QPixmap img(imgNameSelected);
     ui->previewImg->setPixmap(img.scaled(200, 200));
 
     QString imgNameCropped =  QString::fromStdString(path_imgCroppedNames) + imgNamesQString.at(index.row());
     QPixmap imgCropped(imgNameCropped);
     ui->cropImgLabel->setPixmap(imgCropped.scaled(200, 200));
+}
 
-    ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->listView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(provideContextMenu(QPoint)));
+void MainWindow::on_listView_doubleClicked(const QModelIndex &index)
+{
+    on_listView_clicked(index);
+    searchSimilarImgs();
 }
 
 // 提取特征
@@ -392,7 +412,7 @@ void MainWindow::on_faceDetectionButton_clicked(bool checked)
         for(auto imgNameQString:imgNamesQString){
 
             float feat[2048];
-            cv::Mat img_color = cv::imread((dir + '/' + imgNameQString).toStdString());
+            cv::Mat img_color = cv::imread((crops_dir + '/' + imgNameQString).toStdString());
 
             featExtractor->extractFeat(face_detector, point_detector, face_recognizer, img_color, dst_img, feat);
 
@@ -410,8 +430,8 @@ void MainWindow::on_faceDetectionButton_clicked(bool checked)
 
             // Show crop face
             //cv::imshow("Original Face", img_color);
-            cv::imshow("Crop Face", dst_img);
-            cv::waitKey(1);
+            //cv::imshow("Crop Face", dst_img);
+            //cv::waitKey(1);
         }
 
         namesFeats.first = imgNames;
@@ -477,7 +497,7 @@ std::vector<int32_t> MainWindow::do_LSH_search(cv::Mat &img_color){
 
     // do reranking
     std::vector<std::pair<float, size_t> > dists_idxs;
-    for (int i = 0 ; i < numReranking ; i++) {
+    for (unsigned int i = 0 ; i < numReranking && i < idxCandidate.size() ; i++) {
         float tmp_cosine_dist = q.dot(data[idxCandidate[i]]);
         dists_idxs.push_back(std::make_pair(tmp_cosine_dist, idxCandidate[i]));
     }
@@ -485,7 +505,7 @@ std::vector<int32_t> MainWindow::do_LSH_search(cv::Mat &img_color){
     std::sort(dists_idxs.begin(), dists_idxs.end());
     std::reverse(dists_idxs.begin(), dists_idxs.end());
 
-    for(int i = 0 ; i < numReranking ; i++){
+    for(unsigned int i = 0 ; i < numReranking && i < idxCandidate.size() ; i++){
         idxCandidate.at(i) = (int32_t)dists_idxs[i].second;
     }
     return idxCandidate;
@@ -505,7 +525,7 @@ void MainWindow::on_queryButton_clicked()
         idxCandidate = do_LSH_search(img_color);
 
         for (size_t i = 0 ; i != idxCandidate.size() ; i++) {
-            QString tmpImgName = dir + '/' + namesFeats.first.at(idxCandidate[i]).c_str();
+            QString tmpImgName = crops_dir + '/' + namesFeats.first.at(idxCandidate[i]).c_str();
             imgs_listeWidget->addItem(new QListWidgetItem(QIcon(tmpImgName), QString::fromStdString(namesFeats.first.at(idxCandidate[i]).c_str())));
         }
 
@@ -539,3 +559,5 @@ void MainWindow::on_queryButton_clicked()
         QMessageBox::information(NULL, "Title", "请选择一张图片", QMessageBox::Yes);
     }
 }
+
+

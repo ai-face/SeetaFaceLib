@@ -19,20 +19,6 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     videohandler.cpp \
     helper.cpp \
-    ../FaceLib/FaceAlignment/srcFA/cfan.cpp \
-    ../FaceLib/FaceAlignment/srcFA/face_alignment.cpp \
-    ../FaceLib/FaceAlignment/srcFA/sift.cpp \
-    ../FaceLib/FaceDetection/srcFD/classifier/lab_boosted_classifier.cpp \
-    ../FaceLib/FaceDetection/srcFD/classifier/mlp.cpp \
-    ../FaceLib/FaceDetection/srcFD/classifier/surf_mlp.cpp \
-    ../FaceLib/FaceDetection/srcFD/feat/lab_feature_map.cpp \
-    ../FaceLib/FaceDetection/srcFD/feat/surf_feature_map.cpp \
-    ../FaceLib/FaceDetection/srcFD/io/lab_boost_model_reader.cpp \
-    ../FaceLib/FaceDetection/srcFD/io/surf_mlp_model_reader.cpp \
-    ../FaceLib/FaceDetection/srcFD/util/image_pyramid.cpp \
-    ../FaceLib/FaceDetection/srcFD/util/nms.cpp \
-    ../FaceLib/FaceDetection/srcFD/face_detection.cpp \
-    ../FaceLib/FaceDetection/srcFD/fust.cpp \
     src/extractFeats.cpp
 
 HEADERS  += mainwindow.h \
@@ -53,20 +39,22 @@ INCLUDEPATH += /usr/local/include/opencv2
 INCLUDEPATH += /usr/local/include
 
 # Face include
-INCLUDEPATH += ../FaceLib/FaceAlignment/include
-INCLUDEPATH += ../FaceLib/FaceDetection/include
-INCLUDEPATH += ../FaceLib/FaceIdentification/include
+
+SeetaFaceRoot = /home/tom/z.git.github.beautycpp.ai/SeetaFaceEngine/build.install
+INCLUDEPATH += $$SeetaFaceRoot/include/SeetaFace/align
+INCLUDEPATH += $$SeetaFaceRoot/include/SeetaFace/detec
+INCLUDEPATH += $$SeetaFaceRoot/include/SeetaFace/ident
+LIBS += -L$$SeetaFaceRoot/lib -lseeta_fa_lib -lseeta_facedet_lib -lviplnet
 
 # Falconn include
-INCLUDEPATH += ../3rd/FALCONN/src/include
+FalconnRoot = /home/tom/z.git.github.beautycpp.ai/FALCONN/
+INCLUDEPATH += $$FalconnRoot/src/include
 
 # Eigen include
-INCLUDEPATH += ../3rd/FALCONN/external/eigen
+INCLUDEPATH += $$FalconnRoot/external/eigen
 
 LIBS += -L/usr/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video -lopencv_photo -lboost_iostreams -lboost_serialization
 
-# Face lib, need to set the full path
-LIBS += /Users/willard/codes/cpp/face/SeetaFaceLib/FaceLib/FaceIdentification/lib/libviplnet.4.5.dylib
 
 RESOURCES += design.qrc
 

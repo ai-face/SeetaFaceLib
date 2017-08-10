@@ -1,4 +1,4 @@
-#ifndef EXTRACTFEATS_H
+﻿#ifndef EXTRACTFEATS_H
 #define EXTRACTFEATS_H
 
 #include "face_identification.h"
@@ -13,13 +13,6 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
-
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/list.hpp>
 
 #include <sstream>
 #include <fstream>

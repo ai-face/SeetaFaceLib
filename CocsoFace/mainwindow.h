@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -18,7 +18,7 @@
 #include "face_detection.h"
 #include "face_alignment.h"
 
-#include "falconn/eigen_wrapper.h"
+//#include "falconn/eigen_wrapper.h"
 #include "falconn/lsh_nn_table.h"
 
 #include <qfilesystemmodel.h>
@@ -63,8 +63,8 @@ private:
     int MinFaceSize;
     float ImagePyramidScaleFactor;
 
-    int numKNN;
-    int numReranking;
+    unsigned int numKNN;
+    unsigned int numReranking;
 
     float gallery_fea[2048];
     float probe_fea[2048];
@@ -88,14 +88,14 @@ private:
 
 
     QStringList imgNamesQString;
-    QString dir;
+    QString crops_dir;
 
     QListWidget *imgs_listeWidget;
 
     QMenu *ImagePopUpMenu;
     QString imgNameSelected;
 
-    QMenu *myMenu;
+//    QMenu *myMenu;
 
 public slots:
     // general
@@ -119,6 +119,7 @@ private slots:
     void createActions();
 
     std::vector<int32_t> do_LSH_search(cv::Mat &img_color);
+    void on_listView_doubleClicked(const QModelIndex &index);
 };
 
 #endif // MAINWINDOW_H

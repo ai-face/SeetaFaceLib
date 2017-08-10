@@ -1,6 +1,15 @@
-#include "extractFeats.h"
+﻿#include "extractFeats.h"
 
-#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/export.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
+
+//#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
 
 void extractFeats::saveFeaturesFilePair(std::pair<vector<string>, vector<vector<float> >>  &features, string &filename){
     ofstream out(filename.c_str());
