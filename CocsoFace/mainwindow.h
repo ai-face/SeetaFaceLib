@@ -78,7 +78,7 @@ private:
 
     extractFeats *featExtractor;
 
-    std::vector<falconn::DenseVector<float>> data;
+    std::vector<falconn::DenseVector<float>> nomalized_feat_data;
     falconn::LSHConstructionParameters params_cp;
     unique_ptr<falconn::LSHNearestNeighborTable<falconn::DenseVector<float>>> cptable;
     std::vector<int32_t> idxCandidate;

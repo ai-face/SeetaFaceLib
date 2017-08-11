@@ -396,6 +396,8 @@ void MainWindow::on_listView_clicked(const QModelIndex &index)
     QString imgNameCropped =  QString::fromStdString(path_imgCroppedNames) + imgNamesQString.at(index.row());
     QPixmap imgCropped(imgNameCropped);
     ui->cropImgLabel->setPixmap(imgCropped.scaled(200, 200));
+
+    searchSimilarImgs();
 }
 
 void MainWindow::on_listView_doubleClicked(const QModelIndex &index)
@@ -473,7 +475,7 @@ std::vector<int32_t> MainWindow::do_LSH_search(cv::Mat &img_color){
         for (int ii = 0; ii < numFeats; ++ii) {
             falconn::DenseVector<float> v = Eigen::VectorXf::Map(&namesFeats.second[ii][0], dim);
             v.normalize(); // L2归一化
-            data.push_back(v);
+            nomalized_feat_data.push_back(v);
         }
 
         // Cross polytope hashing
@@ -487,7 +489,8 @@ std::vector<int32_t> MainWindow::do_LSH_search(cv::Mat &img_color){
         params_cp.num_rotations = 2;
         params_cp.num_setup_threads = num_setup_threads;
         params_cp.seed = seed ^ 833840234;
-        cptable = unique_ptr<falconn::LSHNearestNeighborTable<falconn::DenseVector<float>>>(std::move(construct_table<falconn::DenseVector<float>>(data, params_cp)));
+        cptable = unique_ptr<falconn::LSHNearestNeighborTable<falconn::DenseVector<float>>>(
+                  std::move(construct_table<falconn::DenseVector<float>>(nomalized_feat_data, params_cp)));
         cptable->set_num_probes(896);
         qDebug() << "index build finished ...";
 
@@ -498,7 +501,7 @@ std::vector<int32_t> MainWindow::do_LSH_search(cv::Mat &img_color){
     // do reranking
     std::vector<std::pair<float, size_t> > dists_idxs;
     for (unsigned int i = 0 ; i < numReranking && i < idxCandidate.size() ; i++) {
-        float tmp_cosine_dist = q.dot(data[idxCandidate[i]]);
+        float tmp_cosine_dist = q.dot(nomalized_feat_data[idxCandidate[i]]);
         dists_idxs.push_back(std::make_pair(tmp_cosine_dist, idxCandidate[i]));
     }
 
